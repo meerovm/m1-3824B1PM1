@@ -134,6 +134,7 @@ int comb_sort(int n, float* a) {
 			}
 		}
 	}
+	buble_sort(n,a);
 	return 0;
 }
 
