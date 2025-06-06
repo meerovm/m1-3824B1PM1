@@ -1,0 +1,225 @@
+#include <iostream>
+#include <stdexcept>
+#include <time.h>
+template <typename T>
+class vector {
+private:
+    T* data;
+    size_t sz;
+public:
+    vector(size_t size = 0) : sz(size) {
+        try {
+            data = new T[sz];
+        }
+        catch(std::bad_alloc& ex){
+            std::cout << "error: bad_alloc";
+            throw ex;
+        }
+    }
+
+    vector(const vector& a) :  sz(a.sz) {
+        try {
+            data = new T[sz];
+        }
+        catch (std::bad_alloc& ex) {
+            std::cout << "error: bad_alloc";
+            throw ex;
+        }
+        for (size_t i = 0; i < sz; ++i)
+            data[i] = a.data[i];
+    }
+
+    vector& operator=(const vector& a) {
+        if (this != &a) {
+            delete[] data;
+            sz = a.sz;
+            try {
+                data = new T[sz];
+            }
+            catch (std::bad_alloc& ex) {
+                sz = 0;
+                std::cout << "error: bad_alloc";
+                throw ex;
+            }
+            for (size_t i = 0; i < sz; ++i)
+                data[i] = a.data[i];
+        }
+        return *this;
+    }
+
+    void swap(vector& a) {
+        if (a.sz == sz) {
+            T q;
+            for (size_t i = 0; i < sz; ++i) {
+                q = a.data[i];
+                a.data[i] = data[i];
+                data[i] = q;
+            }
+        }
+        else {
+            std::cout << "error: bad_length";
+            std::string a = "bad_length";
+            throw a;
+        }
+    }
+
+    ~vector() {
+        delete[] data;
+    }
+
+    T& operator[](const size_t i) const {
+        return data[i];
+    }
+
+    vector operator*(const T a) const {
+        vector b(*this);
+        for (int i = 0; i < sz; i++) {
+            b[i] = this->operator[](i) * a;
+        }
+        return b;
+    }
+
+    vector operator-(const vector& a) {
+        vector b(*this);
+        for (int i = 0; i < a.sz; i++) {
+            b[i] = this->operator[](i) - a[i];
+        }
+        return b;
+    }
+
+    void out() const {
+        for (int i = 0; i < sz; i++) {
+            std::cout << (this->operator[](i)) << " ";
+        }
+        std::cout << "\n";
+    }
+};
+
+
+template <typename T>
+class matrix : public vector< vector<T> > {
+public:
+    const size_t rw;
+    const size_t cl;
+    matrix(size_t r, size_t c) : vector<vector<T>>(r), rw(r), cl(c) {
+        for (size_t i = 0; i < rw; i++)
+            this->operator[](i) = vector<T>(cl);
+    }
+    void random() {
+        for (int i = 0; i < rw; i++) {
+            for (int j = 0; j < cl; j++) {
+                (this->operator[](i))[j] = (T) rand() * 1000 / RAND_MAX;
+            }
+        }
+    }
+    void in() {
+        for (int i = 0; i < rw; i++) {
+            for (int j = 0; j < cl; j++) {
+                std::cin >>(this->operator[](i))[j];
+            }
+        }
+    }
+    void out() const {
+        for (int i = 0; i < rw; i++) {
+            for (int j = 0; j < cl; j++) {
+                std::cout << (this->operator[](i))[j] << " ";
+            }
+            std::cout << "\n";
+        }
+        std::cout << "\n";
+    }
+    int max(int j) {
+        int m=j;
+        for (int i = j+1; i < rw; i++) {
+            if ((this->operator[](i))[j] > (this->operator[](m))[j]) {
+                m = i;
+            }
+        }
+        return m;
+    }
+};
+
+int main() {
+    //ввод
+    srand(time(NULL));
+    time_t start, end;
+    int q, n, m, k = 0;
+    std::cin >> q >> n;
+    start = clock();
+    m = n;
+    m++;
+    matrix<float> v(n, m);
+    matrix<float> v_1(n, m);
+    float eps = 0.0000001;
+    if ((q % 2) == 0) {
+        v.random();
+    }
+    else {
+        v.in();
+    }
+    std::cout << "\n";
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            v_1[i][j] = v[i][j];
+        }
+    }
+    m--;
+    for (int i = 0; i < n; i++) {
+        int ind = v.max(i);
+        v[i].swap(v[ind]);
+        if (abs(v[i][i]) < eps) {
+            if (v[i][m] != 0) {
+                k = 1;
+                std::cout << "no solutions \n";
+                break;
+            }
+            else {
+                k = 2;
+                continue;
+            }
+        }
+        for (int j = 0; j < i; j++) {
+            if (abs(v[j][i]) > eps) {
+                v[j] = v[j] - v[i] * (v[j][i] / v[i][i]);
+            }
+        }
+        for (int j = i + 1; j < n; j++) {
+            if (abs(v[j][i]) > eps) {
+                v[j] = v[j] - v[i] * (v[j][i] / v[i][i]);
+            }
+        }
+    }
+    if (k == 2) {
+        vector<float> a(n);
+        std::cout << "many solutions, for example: ";
+    }
+    if (k != 1) {
+        vector<float> a(n);
+        vector<float> er(n);
+        for (int i = 0; i < n; i++) {
+            if (abs(v[i][i]) > eps) {
+                a[i] = v[i][m] / v[i][i];
+                er[i] = v_1[i][m];
+                std::cout << v[i][m] / v[i][i] << " ";
+            }
+            else {
+                a[i] = 0;
+                er[i] = v_1[i][m];
+                std::cout << "0 ";
+            }
+        }
+        float  mm= 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                er[i] -= a[j] * v_1[i][j];
+            }
+            if (abs(er[i]) > mm) {
+                mm = er[i];
+            }
+        }
+        std::cout << "\n max error: "<< mm;
+    }
+    end = clock();
+    std::cout << "\n       time: " << end - start;
+    return 0;
+}
